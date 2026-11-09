@@ -435,12 +435,38 @@ def admin_login_form(request: Request):
 
 @app.post("/admin/login", response_class=HTMLResponse)
 def admin_login(request: Request, password: str = Form(...)):
+    # Limitador de intentos: 5 fallos seguidos bloquean el panel 15 minutos.
+    # Se guarda en la sesion (no en la base) porque es por navegador/PC.
+    import time
+
+    bloqueado_hasta = float(request.session.get("login_bloqueado_hasta", 0) or 0)
+    ahora = time.time()
+    if ahora < bloqueado_hasta:
+        faltan = int(bloqueado_hasta - ahora)
+        minutos = max(1, (faltan + 59) // 60)
+        return _render(request, 
+            "admin/login.html",
+            _ctx(request, error=f"Demasiados intentos fallidos. Espera {minutos} minuto(s) e intenta de nuevo."),
+            status_code=429,
+        )
+
     # comparar en bytes: compare_digest sobre str falla con acentos/no-ASCII
     if secrets.compare_digest(password.encode("utf-8"), ADMIN_PASSWORD.encode("utf-8")):
         request.session["admin"] = True
+        request.session.pop("login_intentos", None)
+        request.session.pop("login_bloqueado_hasta", None)
         return RedirectResponse("/admin", status_code=303)
+
+    intentos = int(request.session.get("login_intentos", 0)) + 1
+    request.session["login_intentos"] = intentos
+    if intentos >= 5:
+        request.session["login_bloqueado_hasta"] = ahora + 15 * 60
+        mensaje = ("Demasiados intentos fallidos. El panel se bloquea 15 minutos. "
+                   "Si olvidaste la contraseña, cámbiala en el archivo .env y reinicia.")
+    else:
+        mensaje = f"Contraseña incorrecta. Intento {intentos} de 5."
     return _render(request, 
-        "admin/login.html", _ctx(request, error="Contrasena incorrecta."), status_code=401
+        "admin/login.html", _ctx(request, error=mensaje), status_code=401
     )
 
 
@@ -471,22 +497,32 @@ def admin_panel(request: Request):
 
 
 @app.get("/admin/productos", response_class=HTMLResponse)
-def admin_productos(request: Request, categoria: str = ""):
+def admin_productos(request: Request, categoria: str = "", q: str = ""):
     redir = _guard(request)
     if redir:
         return redir
+    q = q.strip()
     con = db.conectar()
-    if categoria in db.CATEGORIAS:
-        filas = con.execute(
-            "SELECT * FROM productos WHERE categoria = ? ORDER BY id DESC", (categoria,)
-        ).fetchall()
-    else:
+    if categoria not in db.CATEGORIAS:
         categoria = ""
-        filas = con.execute("SELECT * FROM productos ORDER BY categoria, id DESC").fetchall()
+    sql = "SELECT * FROM productos"
+    params = []
+    where = []
+    if categoria:
+        where.append("categoria = ?")
+        params.append(categoria)
+    if q:
+        like = f"%{q}%"
+        where.append("(nombre LIKE ? OR descripcion_corta LIKE ? OR presentacion LIKE ?)")
+        params.extend([like, like, like])
+    if where:
+        sql += " WHERE " + " AND ".join(where)
+    sql += " ORDER BY categoria, id DESC"
+    filas = con.execute(sql, params).fetchall()
     filas = _con_foto(con, filas)
     con.close()
     return _render(request, 
-        "admin/productos.html", _ctx(request, productos=filas, categoria=categoria)
+        "admin/productos.html", _ctx(request, productos=filas, categoria=categoria, q=q)
     )
 
 
@@ -607,6 +643,45 @@ def admin_producto_borrar(request: Request, pid: int):
     return RedirectResponse("/admin/productos", status_code=303)
 
 
+@app.post("/admin/productos/{pid}/duplicar")
+def admin_producto_duplicar(request: Request, pid: int):
+    """Copia un producto como borrador para reutilizarlo como base de otro.
+
+    No copia las fotos (cada producto tiene las suyas) y deja el stock en 0 y
+    el producto oculto, para que el administrador lo revise antes de publicarlo.
+    """
+    redir = _guard(request)
+    if redir:
+        return redir
+    con = db.conectar()
+    p = con.execute("SELECT * FROM productos WHERE id = ?", (pid,)).fetchone()
+    if not p:
+        con.close()
+        return RedirectResponse("/admin/productos", status_code=303)
+    nuevo_nombre = (p["nombre"] or "").strip() + " (copia)"
+    slug = db.slug_unico(con, nuevo_nombre)
+    con.execute(
+        """INSERT INTO productos
+           (nombre, slug, categoria, descripcion_corta, descripcion, precio,
+            presentacion, es_por_unidad, stock, tiempo_entrega, activo, destacado)
+           VALUES (?,?,?,?,?,?,?,?,0,?,?,0)""",
+        (nuevo_nombre, slug, p["categoria"], p["descripcion_corta"], p["descripcion"],
+         p["precio"], p["presentacion"], p["es_por_unidad"], p["tiempo_entrega"], 0),
+    )
+    nuevo_id = con.execute("SELECT last_insert_rowid() AS id").fetchone()["id"]
+    receta = con.execute("SELECT * FROM recetas WHERE producto_id = ?", (pid,)).fetchone()
+    if receta:
+        con.execute(
+            """INSERT INTO recetas (producto_id, titulo, rinde, ingredientes, procedimiento, notas)
+               VALUES (?,?,?,?,?,?)""",
+            (nuevo_id, receta["titulo"], receta["rinde"], receta["ingredientes"],
+             receta["procedimiento"], receta["notas"]),
+        )
+    con.commit()
+    con.close()
+    return RedirectResponse(f"/admin/productos/{nuevo_id}/editar", status_code=303)
+
+
 @app.post("/admin/productos/{pid}/fotos")
 async def admin_subir_fotos(
     request: Request,
@@ -666,6 +741,51 @@ def admin_borrar_foto(request: Request, fid: int):
     return RedirectResponse(
         f"/admin/productos/{pid}/editar" if pid else "/admin/productos", status_code=303
     )
+
+
+@app.post("/admin/fotos/{fid}/mover")
+def admin_mover_foto(request: Request, fid: int, direccion: str = Form(...)):
+    """Sube o baja una foto en el orden de la galeria del producto."""
+    redir = _guard(request)
+    if redir:
+        return redir
+    direccion = (direccion or "").lower()
+    if direccion not in ("arriba", "abajo"):
+        return RedirectResponse("/admin/productos", status_code=303)
+
+    con = db.conectar()
+    foto = con.execute("SELECT * FROM fotos WHERE id = ?", (fid,)).fetchone()
+    if not foto:
+        con.close()
+        return RedirectResponse("/admin/productos", status_code=303)
+    pid = foto["producto_id"]
+    fotos = con.execute(
+        "SELECT id, orden FROM fotos WHERE producto_id = ? ORDER BY orden, id", (pid,)
+    ).fetchall()
+    indice = next((i for i, f in enumerate(fotos) if f["id"] == fid), None)
+    if indice is None:
+        con.close()
+        return RedirectResponse(f"/admin/productos/{pid}/editar", status_code=303)
+
+    if direccion == "arriba" and indice > 0:
+        vecino = fotos[indice - 1]
+    elif direccion == "abajo" and indice < len(fotos) - 1:
+        vecino = fotos[indice + 1]
+    else:
+        con.close()
+        return RedirectResponse(f"/admin/productos/{pid}/editar", status_code=303)
+
+    # Intercambiar ordenes. Si coinciden, desempatar por id para que el
+    # ORDER BY orden, id siempre tenga un orden unico.
+    orden_a = foto["orden"]
+    orden_b = vecino["orden"]
+    if orden_a == orden_b:
+        orden_b = orden_a + 1
+    con.execute("UPDATE fotos SET orden = ? WHERE id = ?", (orden_b, foto["id"]))
+    con.execute("UPDATE fotos SET orden = ? WHERE id = ?", (orden_a, vecino["id"]))
+    con.commit()
+    con.close()
+    return RedirectResponse(f"/admin/productos/{pid}/editar", status_code=303)
 
 
 @app.post("/admin/productos/{pid}/receta")

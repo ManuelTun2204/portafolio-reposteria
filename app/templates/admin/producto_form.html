@@ -113,12 +113,23 @@
           {% for f in fotos %}
           <div class="foto-admin">
             <img src="/static/uploads/{{ f.archivo }}" alt="{{ f.alt or p.nombre }}">
-            <form method="post" action="/admin/fotos/{{ f.id }}/borrar" onsubmit="return confirm('¿Borrar esta foto?')">
-              <button class="btn btn-peligro btn-mini" aria-label="Borrar foto">×</button>
-            </form>
+            <div class="foto-acciones">
+              <form method="post" action="/admin/fotos/{{ f.id }}/mover" style="display:inline">
+                <input type="hidden" name="direccion" value="arriba">
+                <button class="btn btn-borde btn-mini" aria-label="Subir foto" {{ 'disabled' if loop.first else '' }}>↑</button>
+              </form>
+              <form method="post" action="/admin/fotos/{{ f.id }}/mover" style="display:inline">
+                <input type="hidden" name="direccion" value="abajo">
+                <button class="btn btn-borde btn-mini" aria-label="Bajar foto" {{ 'disabled' if loop.last else '' }}>↓</button>
+              </form>
+              <form method="post" action="/admin/fotos/{{ f.id }}/borrar" style="display:inline" onsubmit="return confirm('¿Borrar esta foto?')">
+                <button class="btn btn-peligro btn-mini" aria-label="Borrar foto">×</button>
+              </form>
+            </div>
           </div>
           {% endfor %}
         </div>
+        <p class="mudo mt-2 mb-0">La primera foto es la portada. Usa ↑ y ↓ para reordenar.</p>
         {% else %}
         <p class="mudo mt-2 mb-0">Aún no hay fotos. La tienda mostrará un marcador hasta que subas una.</p>
         {% endif %}

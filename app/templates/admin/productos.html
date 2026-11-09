@@ -15,10 +15,16 @@
 
     <div class="barra-acciones">
       <a class="btn btn-primario" href="/admin/productos/nuevo">+ Nuevo producto</a>
+      <form method="get" action="/admin/productos" class="buscador" style="margin:0;flex:1;min-width:220px">
+        {% if categoria %}<input type="hidden" name="categoria" value="{{ categoria }}">{% endif %}
+        <input type="search" name="q" value="{{ q or '' }}" placeholder="Buscar por nombre, presentación..." style="padding:.55rem .8rem;border:1px solid var(--linea);border-radius:999px;font:inherit;width:100%;max-width:320px">
+        <button class="btn btn-borde btn-mini" type="submit">Buscar</button>
+        {% if q %}<a class="btn btn-borde btn-mini" href="/admin/productos{% if categoria %}?categoria={{ categoria }}{% endif %}">Limpiar</a>{% endif %}
+      </form>
       <div class="chips" style="margin:0">
-        <a class="chip {{ 'activo' if not categoria else '' }}" href="/admin/productos">Todos</a>
+        <a class="chip {{ 'activo' if not categoria else '' }}" href="/admin/productos{% if q %}?q={{ q }}{% endif %}">Todos</a>
         {% for clave, nombre in categorias.items() %}
-        <a class="chip {{ 'activo' if categoria == clave else '' }}" href="/admin/productos?categoria={{ clave }}">{{ nombre }}</a>
+        <a class="chip {{ 'activo' if categoria == clave else '' }}" href="/admin/productos?categoria={{ clave }}{% if q %}&q={{ q }}{% endif %}">{{ nombre }}</a>
         {% endfor %}
       </div>
     </div>
@@ -57,6 +63,9 @@
             </td>
             <td class="num">
               <a class="btn btn-borde btn-mini" href="/admin/productos/{{ p.id }}/editar">Editar</a>
+              <form method="post" action="/admin/productos/{{ p.id }}/duplicar" style="display:inline">
+                <button class="btn btn-borde btn-mini" title="Crear una copia como borrador">Duplicar</button>
+              </form>
               <form method="post" action="/admin/productos/{{ p.id }}/borrar" style="display:inline" onsubmit="return confirm('¿Borrar este producto y todas sus fotos?')">
                 <button class="btn btn-peligro btn-mini">Borrar</button>
               </form>
@@ -67,8 +76,8 @@
       </table>
       {% else %}
       <div class="vacio">
-        <h2>Sin productos</h2>
-        <p>Crea el primero para que aparezca en la galería.</p>
+        <h2>{% if q %}Sin resultados{% else %}Sin productos{% endif %}</h2>
+        <p>{% if q %}No hay productos que coincidan con «{{ q }}». Prueba otro término o limpia la búsqueda.{% else %}Crea el primero para que aparezca en la galería.{% endif %}</p>
         <a class="btn btn-primario" href="/admin/productos/nuevo">+ Nuevo producto</a>
       </div>
       {% endif %}
