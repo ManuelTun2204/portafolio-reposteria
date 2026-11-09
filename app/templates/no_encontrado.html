@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block titulo %}No encontrado · {{ marca }}{% endblock %}
+
+{% block contenido %}
+<section class="pagina">
+  <div class="contenedor">
+    <div class="panel vacio">
+      <h1>No encontramos esa página</h1>
+      <p>Puede que el producto ya no esté disponible o que el enlace esté mal escrito.</p>
+      <a class="btn btn-primario" href="/galeria">Ver la galería</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

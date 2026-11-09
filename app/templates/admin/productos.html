@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block titulo %}Productos · {{ marca }}{% endblock %}
+
+{% block contenido %}
+<section class="pagina">
+  <div class="contenedor">
+    <div class="pagina-cabeza">
+      <span class="eyebrow">Administración</span>
+      <h1>Productos</h1>
+      <p>Menú interno: aquí se crean, editan y retiran los productos de la tienda.</p>
+    </div>
+
+    {% include "admin/_nav.html" %}
+
+    <div class="barra-acciones">
+      <a class="btn btn-primario" href="/admin/productos/nuevo">+ Nuevo producto</a>
+      <div class="chips" style="margin:0">
+        <a class="chip {{ 'activo' if not categoria else '' }}" href="/admin/productos">Todos</a>
+        {% for clave, nombre in categorias.items() %}
+        <a class="chip {{ 'activo' if categoria == clave else '' }}" href="/admin/productos?categoria={{ clave }}">{{ nombre }}</a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="panel">
+      {% if productos %}
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Foto</th><th>Producto</th><th>Categoría</th>
+            <th class="num">Precio</th><th class="num">Stock</th><th>Estado</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in productos %}
+          <tr>
+            <td>
+              <div class="linea-foto" style="width:56px;height:56px">
+                {% if p.foto %}
+                <img src="/static/uploads/{{ p.foto }}" alt="">
+                {% else %}
+                <div class="foto-vacia" style="font-size:1.1rem" aria-hidden="true">✦</div>
+                {% endif %}
+              </div>
+            </td>
+            <td>
+              <strong>{{ p.nombre }}</strong><br>
+              <span class="mudo">{{ p.presentacion or '—' }}</span>
+            </td>
+            <td>{{ categorias[p.categoria] }}</td>
+            <td class="num">{{ p.precio|dinero }}</td>
+            <td class="num">{{ p.stock }}{% if p.es_por_unidad %} <span class="mudo">pza</span>{% endif %}</td>
+            <td>
+              {% if p.activo %}<span class="pastilla ok">Visible</span>{% else %}<span class="pastilla off">Oculto</span>{% endif %}
+              {% if p.stock|int <= 0 %} <span class="pastilla off">Agotado</span>{% endif %}
+            </td>
+            <td class="num">
+              <a class="btn btn-borde btn-mini" href="/admin/productos/{{ p.id }}/editar">Editar</a>
+              <form method="post" action="/admin/productos/{{ p.id }}/borrar" style="display:inline" onsubmit="return confirm('¿Borrar este producto y todas sus fotos?')">
+                <button class="btn btn-peligro btn-mini">Borrar</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="vacio">
+        <h2>Sin productos</h2>
+        <p>Crea el primero para que aparezca en la galería.</p>
+        <a class="btn btn-primario" href="/admin/productos/nuevo">+ Nuevo producto</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

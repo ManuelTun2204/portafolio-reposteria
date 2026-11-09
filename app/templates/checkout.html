@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block titulo %}Terminar pedido · {{ marca }}{% endblock %}
+
+{% block contenido %}
+<section class="pagina">
+  <div class="contenedor">
+    <div class="pagina-cabeza">
+      <span class="eyebrow">Paso final</span>
+      <h1>Terminar pedido</h1>
+      <p>No se cobra en línea: apartamos tu pedido y confirmamos contigo la entrega y el pago.</p>
+    </div>
+
+    {% if error %}<div class="aviso aviso-error">{{ error }}</div>{% endif %}
+
+    <div class="dos-columnas">
+      <form method="post" action="/checkout" class="panel" id="form-checkout">
+        <h3>Tus datos</h3>
+        <div class="campo">
+          <label for="cliente">Nombre *</label>
+          <input id="cliente" name="cliente" required maxlength="120" autocomplete="name"
+                 value="{{ datos.cliente or '' }}">
+        </div>
+        <div class="campo-fila">
+          <div class="campo">
+            <label for="telefono">Teléfono / WhatsApp</label>
+            <input id="telefono" name="telefono" maxlength="30" inputmode="tel" autocomplete="tel"
+                   value="{{ datos.telefono or '' }}">
+          </div>
+          <div class="campo">
+            <label for="email">Correo</label>
+            <input id="email" name="email" type="email" maxlength="120" autocomplete="email"
+                   value="{{ datos.email or '' }}">
+          </div>
+        </div>
+
+        <h3 class="mt-2">Entrega</h3>
+        <div class="opciones-entrega">
+          <label class="opcion">
+            <input type="radio" name="entrega_tipo" value="recoger"
+                   {{ 'checked' if datos.entrega_tipo != 'domicilio' else '' }}>
+            <span>
+              <strong>Recoger en el taller</strong>
+              <small>Sin costo de envío</small>
+            </span>
+          </label>
+          <label class="opcion">
+            <input type="radio" name="entrega_tipo" value="domicilio"
+                   {{ 'checked' if datos.entrega_tipo == 'domicilio' else '' }}>
+            <span>
+              <strong>Entrega a domicilio</strong>
+              <small>El costo depende de tu zona</small>
+            </span>
+          </label>
+        </div>
+
+        <div id="bloque-recoger" class="bloque-condicional">
+          {% if config.direccion_taller %}
+          <div class="aviso aviso-info mb-0">
+            Recoges en: <strong>{{ config.direccion_taller }}</strong>
+          </div>
+          {% else %}
+          <div class="aviso aviso-info mb-0">
+            Te confirmamos la dirección del taller por WhatsApp al apartar el pedido.
+          </div>
+          {% endif %}
+        </div>
+
+        <div id="bloque-domicilio" class="bloque-condicional">
+          {% if zonas %}
+          <div class="campo">
+            <label for="zona_id">Zona de entrega *</label>
+            <select id="zona_id" name="zona_id">
+              <option value="">Elige tu zona…</option>
+              {% for z in zonas %}
+              <option value="{{ z.id }}"
+                      data-precio="{{ z.precio }}"
+                      data-convenir="{{ 1 if z.a_convenir else 0 }}"
+                      {{ 'selected' if datos.zona_id and datos.zona_id|string == z.id|string else '' }}>
+                {{ z.nombre }}{% if z.a_convenir %} · por confirmar{% else %} · {{ z.precio|dinero }}{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+            <p class="ayuda">El costo de envío lo ves antes de apartar; lo calcula el servidor con tu zona.</p>
+          </div>
+          <div class="campo">
+            <label for="direccion">Dirección *</label>
+            <textarea id="direccion" name="direccion" maxlength="300"
+                      placeholder="Calle, número, colonia y referencias">{{ datos.direccion or '' }}</textarea>
+          </div>
+          {% else %}
+          <div class="aviso aviso-error mb-0">
+            Todavía no hay zonas de envío configuradas. Elige recoger en sitio o escríbenos por WhatsApp.
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="campo mt-2">
+          <label for="notas">Notas (sabor, dedicatoria, horario)</label>
+          <textarea id="notas" name="notas" maxlength="600">{{ datos.notas or '' }}</textarea>
+        </div>
+
+        <button class="btn btn-primario btn-bloque">Apartar pedido</button>
+        <p class="mudo mt-2 mb-0">
+          Al apartar, el pedido queda registrado con un folio. No se cobra nada en este paso:
+          el pago se acuerda al confirmar.
+        </p>
+      </form>
+
+      <aside class="panel">
+        <h3>Tu pedido</h3>
+        {% for f in filas %}
+        <div class="fila-total">
+          <span>{{ f.cantidad }} × {{ f.producto.nombre }}</span>
+          <span>{{ f.subtotal|dinero }}</span>
+        </div>
+        {% endfor %}
+        <div class="fila-total mt-2"><span>Subtotal</span><span>{{ subtotal|dinero }}</span></div>
+        <div class="fila-total"><span>Envío</span><span id="linea-envio">$0.00</span></div>
+        <div class="fila-total grande"><span>Total</span><span id="linea-total">{{ subtotal|dinero }}</span></div>
+        <p class="mudo mt-1 mb-0" id="nota-envio" hidden>
+          El costo de envío a tu zona se confirma por WhatsApp antes de preparar el pedido.
+        </p>
+        <a class="btn btn-borde btn-bloque mt-2" href="/carrito">Editar carrito</a>
+      </aside>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Solo pinta el resumen mientras el cliente elige. El cobro real lo decide
+  // el servidor con la zona guardada en la base: este numero es informativo.
+  (function () {
+    var subtotal = {{ subtotal }};
+    var radios = document.querySelectorAll('input[name="entrega_tipo"]');
+    var bloqueDom = document.getElementById('bloque-domicilio');
+    var bloqueRec = document.getElementById('bloque-recoger');
+    var zona = document.getElementById('zona_id');
+    var direccion = document.getElementById('direccion');
+    var lineaEnvio = document.getElementById('linea-envio');
+    var lineaTotal = document.getElementById('linea-total');
+    var nota = document.getElementById('nota-envio');
+
+    function dinero(n) {
+      return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function pinta() {
+      var elegido = document.querySelector('input[name="entrega_tipo"]:checked');
+      var dom = elegido && elegido.value === 'domicilio';
+      bloqueDom.hidden = !dom;
+      bloqueRec.hidden = !!dom;
+      if (zona) { zona.required = !!dom; }
+      if (direccion) { direccion.required = !!dom; }
+
+      var envio = 0;
+      var convenir = false;
+      if (dom && zona && zona.value) {
+        var op = zona.options[zona.selectedIndex];
+        convenir = op.getAttribute('data-convenir') === '1';
+        envio = convenir ? 0 : parseFloat(op.getAttribute('data-precio') || '0');
+      }
+
+      if (!dom) {
+        lineaEnvio.textContent = '$0.00';
+      } else if (!zona || !zona.value) {
+        lineaEnvio.textContent = '—';
+      } else {
+        lineaEnvio.textContent = convenir ? 'Por confirmar' : dinero(envio);
+      }
+      lineaTotal.textContent = dinero(subtotal + envio);
+      nota.hidden = !(dom && convenir);
+    }
+
+    for (var i = 0; i < radios.length; i++) {
+      radios[i].addEventListener('change', pinta);
+    }
+    if (zona) { zona.addEventListener('change', pinta); }
+    pinta();
+  })();
+</script>
+{% endblock %}

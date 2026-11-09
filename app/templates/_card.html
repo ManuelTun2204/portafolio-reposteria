@@ -1,0 +1,28 @@
+{# Tarjeta de producto reutilizable en portada, galería y relacionados. #}
+{% macro tarjeta(p) %}
+<a class="tarjeta" href="/producto/{{ p.slug }}">
+  <div class="tarjeta-foto">
+    {% if p.foto %}
+    <img src="/static/uploads/{{ p.foto }}" alt="{{ p.nombre }}" loading="lazy">
+    {% else %}
+    <div class="foto-vacia" aria-hidden="true">✦</div>
+    {% endif %}
+    {% if p.stock|int <= 0 %}
+    <span class="etiqueta agotado">Agotado</span>
+    {% elif p.destacado %}
+    <span class="etiqueta">Destacado</span>
+    {% endif %}
+  </div>
+  <div class="tarjeta-cuerpo">
+    <h3>{{ p.nombre }}</h3>
+    <p class="corta">{{ p.descripcion_corta or p.presentacion }}</p>
+    <div class="tarjeta-pie">
+      <span class="precio">
+        {{ p.precio|dinero }}
+        {% if p.es_por_unidad %}<small>por pieza</small>{% endif %}
+      </span>
+      <span class="btn btn-borde btn-mini">Ver detalle</span>
+    </div>
+  </div>
+</a>
+{% endmacro %}

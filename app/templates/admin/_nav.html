@@ -1,0 +1,9 @@
+<div class="admin-nav">
+  <a class="{{ 'activo' if request.url.path == '/admin' else '' }}" href="/admin">Panel</a>
+  <a class="{{ 'activo' if request.url.path.startswith('/admin/productos') else '' }}" href="/admin/productos">Productos</a>
+  <a class="{{ 'activo' if request.url.path.startswith('/admin/recetas') else '' }}" href="/admin/recetas">Recetas</a>
+  <a class="{{ 'activo' if request.url.path.startswith('/admin/pedidos') else '' }}" href="/admin/pedidos">Pedidos</a>
+  <a class="{{ 'activo' if request.url.path.startswith('/admin/zonas') else '' }}" href="/admin/zonas">Zonas de envío</a>
+  <a href="/">Ver tienda</a>
+  <a href="/admin/logout">Salir</a>
+</div>

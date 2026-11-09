@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block titulo %}Recetas · {{ marca }}{% endblock %}
+
+{% block contenido %}
+<section class="pagina">
+  <div class="contenedor">
+    <div class="pagina-cabeza">
+      <span class="eyebrow">Administración</span>
+      <h1>Recetas</h1>
+      <p>Solo el administrador ve esta sección. Cada receta se guarda ligada a un producto.</p>
+    </div>
+
+    {% include "admin/_nav.html" %}
+
+    <div class="panel">
+      {% if filas %}
+      <table class="tabla">
+        <thead>
+          <tr><th>Producto</th><th>Categoría</th><th>Receta</th><th>Actualizada</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for f in filas %}
+          <tr>
+            <td><strong>{{ f.nombre }}</strong></td>
+            <td>{{ categorias[f.categoria] }}</td>
+            <td>
+              {% if f.tiene %}
+              <span class="pastilla ok">{{ f.titulo or 'Sin título' }}</span>
+              {% else %}
+              <span class="pastilla off">Sin receta</span>
+              {% endif %}
+            </td>
+            <td class="mudo">{{ f.actualizado or '—' }}</td>
+            <td class="num">
+              <a class="btn btn-borde btn-mini" href="/admin/productos/{{ f.id }}/editar#receta">{{ 'Editar' if f.tiene else 'Agregar' }}</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="mudo mb-0">No hay productos todavía. Crea uno para poder guardarle receta.</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

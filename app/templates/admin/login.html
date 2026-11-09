@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block titulo %}Acceso administrador · {{ marca }}{% endblock %}
+
+{% block contenido %}
+<section class="pagina">
+  <div class="contenedor">
+    <div class="panel login-caja">
+      <div class="marca">
+        <span class="marca-icono">✦</span>
+        <span class="marca-texto">
+          <strong>{{ marca }}</strong>
+          <small>Administración</small>
+        </span>
+      </div>
+
+      <h2>Entrar al panel</h2>
+      {% if error %}<div class="aviso aviso-error">{{ error }}</div>{% endif %}
+      {% if password_default %}
+      <div class="aviso aviso-info">La contraseña sigue siendo la de ejemplo. Cámbiala con la variable <code>ADMIN_PASSWORD</code>.</div>
+      {% endif %}
+
+      <form method="post" action="/admin/login">
+        <div class="campo">
+          <label for="password">Contraseña</label>
+          <input id="password" type="password" name="password" required autofocus autocomplete="current-password">
+        </div>
+        <button class="btn btn-primario btn-bloque">Entrar</button>
+      </form>
+
+      <p class="mudo mt-2 mb-0"><a href="/">← Volver a la tienda</a></p>
+    </div>
+  </div>
+</section>
+{% endblock %}

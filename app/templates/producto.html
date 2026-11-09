@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% from "_card.html" import tarjeta %}
+
+{% block titulo %}{{ p.nombre }} · {{ marca }}{% endblock %}
+{% block descripcion %}{{ p.descripcion_corta or p.nombre }}{% endblock %}
+
+{% block contenido %}
+<div class="contenedor">
+  <div class="detalle">
+    <div>
+      <div class="galeria-principal">
+        {% if fotos %}
+        <img id="foto-principal" src="/static/uploads/{{ fotos[0].archivo }}" alt="{{ fotos[0].alt or p.nombre }}">
+        {% else %}
+        <div class="foto-vacia" aria-hidden="true">✦</div>
+        {% endif %}
+      </div>
+      {% if fotos|length > 1 %}
+      <div class="miniaturas">
+        {% for f in fotos %}
+        <button type="button" class="miniatura {{ 'activa' if loop.first else '' }}" data-src="/static/uploads/{{ f.archivo }}">
+          <img src="/static/uploads/{{ f.archivo }}" alt="{{ f.alt or p.nombre }}">
+        </button>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="detalle-info">
+      <span class="eyebrow">{{ categorias[p.categoria] }}</span>
+      <h1>{{ p.nombre }}</h1>
+      <p class="detalle-corta">{{ p.descripcion_corta }}</p>
+
+      <div class="precio" style="font-size:1.8rem">
+        {{ p.precio|dinero }}
+        <small>{% if p.es_por_unidad %}por pieza{% else %}por {{ p.presentacion or 'producto' }}{% endif %}</small>
+      </div>
+
+      <dl class="meta">
+        <div>
+          <dt>Presentación</dt>
+          <dd>{{ p.presentacion or 'A convenir' }}</dd>
+        </div>
+        <div>
+          <dt>Venta</dt>
+          <dd>{% if p.es_por_unidad %}Por pieza{% else %}Pieza completa{% endif %}</dd>
+        </div>
+        <div>
+          <dt>Disponibilidad</dt>
+          <dd>{% if p.stock|int > 0 %}{{ p.stock }} disponible(s){% else %}Agotado{% endif %}</dd>
+        </div>
+        <div>
+          <dt>Tiempo de entrega</dt>
+          <dd>{{ p.tiempo_entrega or 'A convenir' }}</dd>
+        </div>
+      </dl>
+
+      {% if p.stock|int > 0 %}
+      <form method="post" action="/carrito/agregar" class="compra">
+        <input type="hidden" name="producto_id" value="{{ p.id }}">
+        <div class="cantidad">
+          <input type="number" name="cantidad" value="1" min="1" max="{{ p.stock }}" aria-label="Cantidad">
+        </div>
+        <button class="btn btn-primario">Agregar a tu carrito</button>
+        <a class="btn btn-borde" href="/carrito">Ver carrito ({{ carrito_n }})</a>
+      </form>
+      {% else %}
+      <div class="aviso aviso-error">Este producto está agotado por ahora. Escríbenos para avisarte cuando vuelva.</div>
+      <a class="btn btn-borde" href="/galeria">Ver otros productos</a>
+      {% endif %}
+
+      {% if p.descripcion %}
+      <hr class="separador">
+      <h3>Descripción</h3>
+      <p style="white-space:pre-line">{{ p.descripcion }}</p>
+      {% endif %}
+
+      {% if receta %}
+      <div class="receta">
+        <h3>Receta interna · {{ receta.titulo or 'sin título' }}</h3>
+        {% if receta.rinde %}<p class="mudo">Rinde: {{ receta.rinde }}</p>{% endif %}
+        {% if receta.ingredientes %}
+        <h4>Ingredientes</h4>
+        <pre>{{ receta.ingredientes }}</pre>
+        {% endif %}
+        {% if receta.procedimiento %}
+        <h4>Procedimiento</h4>
+        <pre>{{ receta.procedimiento }}</pre>
+        {% endif %}
+        {% if receta.notas %}
+        <h4>Notas</h4>
+        <pre>{{ receta.notas }}</pre>
+        {% endif %}
+        <p class="mudo mt-2 mb-0">Solo tú ves esta receta porque iniciaste sesión como administrador.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if relacionados %}
+  <section class="seccion" style="padding-top:0">
+    <div class="seccion-cabeza">
+      <div>
+        <h2>También te puede gustar</h2>
+        <p>Misma sección: {{ categorias[p.categoria] }}.</p>
+      </div>
+      <a class="ver-todo" href="/galeria?categoria={{ p.categoria }}">Ver sección</a>
+    </div>
+    <div class="rejilla">
+      {% for r in relacionados %}{{ tarjeta(r) }}{% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if fotos|length > 1 %}
+<script>
+  document.querySelectorAll('.miniatura').forEach(function (boton) {
+    boton.addEventListener('click', function () {
+      document.querySelectorAll('.miniatura').forEach(function (otro) {
+        otro.classList.remove('activa');
+      });
+      boton.classList.add('activa');
+      var principal = document.getElementById('foto-principal');
+      if (principal) principal.src = boton.dataset.src;
+    });
+  });
+</script>
+{% endif %}
+{% endblock %}

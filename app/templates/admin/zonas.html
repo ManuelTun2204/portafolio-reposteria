@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block titulo %}Zonas de envío · {{ marca }}{% endblock %}
+
+{% block contenido %}
+<section class="pagina">
+  <div class="contenedor">
+    <div class="pagina-cabeza">
+      <span class="eyebrow">Administración</span>
+      <h1>Zonas de envío</h1>
+      <p>
+        El cliente elige su zona al pedir a domicilio y ve el costo antes de apartar.
+        El precio que se cobra es siempre el que está aquí, no el que manda el navegador.
+      </p>
+    </div>
+
+    {% include "admin/_nav.html" %}
+
+    {% if not config.clabe %}
+    <div class="aviso aviso-info">
+      <strong>Pago por acordar.</strong>
+      No hay <code>CLABE</code> configurada, así que la tienda no muestra datos bancarios:
+      solo pide acordar el pago por WhatsApp. Para mostrar transferencia, define
+      <code>BANCO</code>, <code>TITULAR</code> y <code>CLABE</code> en el archivo <code>.env</code>.
+    </div>
+    {% else %}
+    <div class="aviso aviso-ok">
+      <strong>Transferencia activa.</strong>
+      {{ config.banco or 'Banco sin nombre' }} · {{ config.titular or 'Titular sin nombre' }} ·
+      CLABE terminación {{ config.clabe[-4:] }}.
+      {% if config.anticipo_pct > 0 %}
+      Se pide un anticipo del {{ config.anticipo_pct }}% y el resto se paga al entregar.
+      {% else %}
+      Se pide el pago completo del pedido.
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="panel">
+      <h3>Zonas configuradas</h3>
+      {% if zonas %}
+      <div class="tabla-scroll">
+        <table class="tabla tabla-zonas">
+          <thead>
+            <tr>
+              <th>Orden</th><th>Nombre de la zona</th><th class="num">Costo</th>
+              <th>A convenir</th><th>Activa</th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for z in zonas %}
+            <tr>
+              <td><input form="zona-{{ z.id }}" name="orden" type="number" value="{{ z.orden }}" class="mini-input corto"></td>
+              <td><input form="zona-{{ z.id }}" name="nombre" value="{{ z.nombre }}" required maxlength="80" class="mini-input"></td>
+              <td class="num"><input form="zona-{{ z.id }}" name="precio" type="number" min="0" step="0.01" value="{{ z.precio }}" class="mini-input corto num"></td>
+              <td class="centro"><input form="zona-{{ z.id }}" type="checkbox" name="a_convenir" value="1" {{ 'checked' if z.a_convenir else '' }}></td>
+              <td class="centro"><input form="zona-{{ z.id }}" type="checkbox" name="activo" value="1" {{ 'checked' if z.activo else '' }}></td>
+              <td class="acciones-fila">
+                <form id="zona-{{ z.id }}" method="post" action="/admin/zonas/{{ z.id }}/guardar"></form>
+                <button form="zona-{{ z.id }}" class="btn btn-borde btn-mini">Guardar</button>
+                <form method="post" action="/admin/zonas/{{ z.id }}/borrar"
+                      onsubmit="return confirm('¿Borrar la zona «{{ z.nombre }}»?')">
+                  <button class="btn btn-peligro btn-mini">Borrar</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="ayuda mt-2">
+        «A convenir» sirve para lugares fuera de cobertura: el cliente ve
+        <em>por confirmar</em> en vez de un precio que no le corresponde, y el total
+        se cierra por WhatsApp. Los pedidos ya guardados conservan el costo con el que
+        se apartaron, aunque cambies la tarifa después.
+      </p>
+      {% else %}
+      <div class="vacio">
+        <h2>Sin zonas todavía</h2>
+        <p>Mientras no haya zonas activas, la tienda solo permite recoger en el taller.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="panel mt-2">
+      <h3>Agregar zona</h3>
+      <form method="post" action="/admin/zonas/nueva" class="form-zona-nueva">
+        <div class="campo">
+          <label for="nombre">Nombre</label>
+          <input id="nombre" name="nombre" required maxlength="80" placeholder="Zona 3 · Colonia X">
+        </div>
+        <div class="campo">
+          <label for="precio">Costo de envío</label>
+          <input id="precio" name="precio" type="number" min="0" step="0.01" value="0">
+        </div>
+        <div class="campo-check">
+          <input id="a_convenir" name="a_convenir" type="checkbox" value="1">
+          <label for="a_convenir">Precio a convenir (fuera de cobertura)</label>
+        </div>
+        <div class="campo-check">
+          <input id="activo" name="activo" type="checkbox" value="1" checked>
+          <label for="activo">Visible en la tienda</label>
+        </div>
+        <button class="btn btn-primario">Agregar zona</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

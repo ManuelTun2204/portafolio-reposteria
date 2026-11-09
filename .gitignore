@@ -1,0 +1,14 @@
+# Entorno local
+.venv/
+__pycache__/
+*.pyc
+
+# Base de datos y fotos subidas (datos de esta PC, no viajan por git)
+data/
+app/static/uploads/*
+!app/static/uploads/.gitkeep
+
+# Secretos
+.env
+.env.local
+.env.*.local

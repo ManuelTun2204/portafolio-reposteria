@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block titulo %}{{ 'Editar' if p else 'Nuevo' }} producto · {{ marca }}{% endblock %}
+
+{% block contenido %}
+<section class="pagina">
+  <div class="contenedor">
+    <div class="pagina-cabeza">
+      <span class="eyebrow">Administración</span>
+      <h1>{{ 'Editar producto' if p else 'Nuevo producto' }}</h1>
+      <p>
+        {% if p %}
+        <a href="/producto/{{ p.slug }}" target="_blank" rel="noopener">Ver en la tienda ↗</a>
+        {% else %}
+        Guarda el producto y después podrás subir fotos y receta.
+        {% endif %}
+      </p>
+    </div>
+
+    {% include "admin/_nav.html" %}
+
+    <form method="post" action="{{ ('/admin/productos/' ~ p.id ~ '/editar') if p else '/admin/productos/nuevo' }}" class="panel">
+      <h3>Datos del producto</h3>
+
+      <div class="campo">
+        <label for="nombre">Nombre *</label>
+        <input id="nombre" name="nombre" required maxlength="120" value="{{ p.nombre if p else '' }}">
+      </div>
+
+      <div class="campo-fila">
+        <div class="campo">
+          <label for="categoria">Categoría</label>
+          <select id="categoria" name="categoria">
+            {% for clave, nombre in categorias.items() %}
+            <option value="{{ clave }}" {{ 'selected' if p and p.categoria == clave else '' }}>{{ nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="campo">
+          <label for="precio">Precio (MXN) *</label>
+          <input id="precio" name="precio" type="number" step="0.01" min="0" required value="{{ '%.2f'|format(p.precio) if p else '' }}">
+        </div>
+      </div>
+
+      <div class="campo-fila">
+        <div class="campo">
+          <label for="presentacion">Presentación</label>
+          <input id="presentacion" name="presentacion" maxlength="120" placeholder="Pastel de 20 cm, caja de 12 piezas..." value="{{ p.presentacion if p else '' }}">
+        </div>
+        <div class="campo">
+          <label for="tiempo_entrega">Tiempo de entrega</label>
+          <input id="tiempo_entrega" name="tiempo_entrega" maxlength="80" placeholder="48 h" value="{{ p.tiempo_entrega if p else '' }}">
+        </div>
+      </div>
+
+      <div class="campo-fila">
+        <div class="campo">
+          <label for="stock">Stock</label>
+          <input id="stock" name="stock" type="number" min="0" step="1" value="{{ p.stock if p else 0 }}">
+        </div>
+        <div class="campo" style="display:flex;align-items:flex-end">
+          <label class="campo-check">
+            <input type="checkbox" name="es_por_unidad" value="1" {{ 'checked' if p and p.es_por_unidad else '' }}>
+            Se vende por unidad
+          </label>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label for="descripcion_corta">Descripción corta</label>
+        <input id="descripcion_corta" name="descripcion_corta" maxlength="160" value="{{ p.descripcion_corta if p else '' }}">
+      </div>
+
+      <div class="campo">
+        <label for="descripcion">Descripción completa</label>
+        <textarea id="descripcion" name="descripcion" maxlength="2000">{{ p.descripcion if p else '' }}</textarea>
+      </div>
+
+      <div class="campo-check">
+        <input type="checkbox" id="activo" name="activo" value="1" {{ 'checked' if (not p or p.activo) else '' }}>
+        <label for="activo">Visible en la tienda</label>
+      </div>
+      <div class="campo-check">
+        <input type="checkbox" id="destacado" name="destacado" value="1" {{ 'checked' if p and p.destacado else '' }}>
+        <label for="destacado">Mostrar en destacados</label>
+      </div>
+
+      <div class="barra-acciones mt-2">
+        <button class="btn btn-primario">{{ 'Guardar cambios' if p else 'Crear producto' }}</button>
+        <a class="btn btn-borde" href="/admin/productos">Cancelar</a>
+      </div>
+    </form>
+
+    {% if p %}
+    <div class="dos-columnas mt-3">
+      <div class="panel">
+        <h3>Fotos</h3>
+        <p class="mudo">JPG, PNG o WebP. Máximo 6 MB por archivo. La primera foto es la portada.</p>
+        <form method="post" action="/admin/productos/{{ p.id }}/fotos" enctype="multipart/form-data">
+          <div class="campo">
+            <label for="fotos">Agregar fotos</label>
+            <input id="fotos" type="file" name="fotos" multiple accept=".jpg,.jpeg,.png,.webp">
+          </div>
+          <div class="campo">
+            <label for="alt">Texto alternativo (opcional)</label>
+            <input id="alt" name="alt" maxlength="120" placeholder="Describe la foto">
+          </div>
+          <button class="btn btn-oscuro btn-mini">Subir fotos</button>
+        </form>
+
+        {% if fotos %}
+        <div class="fotos-admin mt-2">
+          {% for f in fotos %}
+          <div class="foto-admin">
+            <img src="/static/uploads/{{ f.archivo }}" alt="{{ f.alt or p.nombre }}">
+            <form method="post" action="/admin/fotos/{{ f.id }}/borrar" onsubmit="return confirm('¿Borrar esta foto?')">
+              <button class="btn btn-peligro btn-mini" aria-label="Borrar foto">×</button>
+            </form>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="mudo mt-2 mb-0">Aún no hay fotos. La tienda mostrará un marcador hasta que subas una.</p>
+        {% endif %}
+      </div>
+
+      <div class="panel" id="receta">
+        <h3>Receta (solo administrador)</h3>
+        <p class="mudo">Esta sección no se envía al cliente.</p>
+        <form method="post" action="/admin/productos/{{ p.id }}/receta">
+          <div class="campo">
+            <label for="titulo">Título</label>
+            <input id="titulo" name="titulo" maxlength="120" value="{{ receta.titulo if receta else '' }}">
+          </div>
+          <div class="campo">
+            <label for="rinde">Rinde</label>
+            <input id="rinde" name="rinde" maxlength="80" placeholder="12 porciones" value="{{ receta.rinde if receta else '' }}">
+          </div>
+          <div class="campo">
+            <label for="ingredientes">Ingredientes</label>
+            <textarea id="ingredientes" name="ingredientes">{{ receta.ingredientes if receta else '' }}</textarea>
+          </div>
+          <div class="campo">
+            <label for="procedimiento">Procedimiento</label>
+            <textarea id="procedimiento" name="procedimiento" style="min-height:150px">{{ receta.procedimiento if receta else '' }}</textarea>
+          </div>
+          <div class="campo">
+            <label for="notas">Notas internas</label>
+            <textarea id="notas" name="notas">{{ receta.notas if receta else '' }}</textarea>
+          </div>
+          <button class="btn btn-oscuro btn-mini">Guardar receta</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

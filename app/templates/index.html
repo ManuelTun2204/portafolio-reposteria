@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% from "_card.html" import tarjeta %}
+
+{% block titulo %}{{ marca }} · Repostería artesanal{% endblock %}
+
+{% block contenido %}
+<section class="hero">
+  <div class="contenedor hero-in">
+    <div>
+      <span class="eyebrow">Hecho por encargo</span>
+      <h1>Pasteles y postres que se recuerdan.</h1>
+      <p class="entrada">Elige tu postre, revisa la presentación, el stock y el tiempo de entrega, y aparta en línea. Te confirmamos para cerrar los detalles.</p>
+      <div class="hero-acciones">
+        <a class="btn btn-primario" href="/galeria">Ver la galería</a>
+        <a class="btn btn-borde" href="/galeria?categoria=promociones">Promociones</a>
+      </div>
+    </div>
+    <aside class="hero-panel">
+      <h3>Cómo funciona</h3>
+      <div class="hero-lista">
+        <div class="hero-item"><span>1. Elige en la galería</span><span>→</span></div>
+        <div class="hero-item"><span>2. Agrega a tu carrito</span><span>→</span></div>
+        <div class="hero-item"><span>3. Aparta con tus datos</span><span>→</span></div>
+        <div class="hero-item"><span>4. Confirmamos la entrega</span><span>✓</span></div>
+      </div>
+      <p class="mudo mt-2 mb-0">El pago y la entrega se acuerdan al confirmar. No se cobra en línea.</p>
+    </aside>
+  </div>
+</section>
+
+<section class="seccion">
+  <div class="contenedor">
+    <div class="seccion-cabeza">
+      <div>
+        <h2>Destacados</h2>
+        <p>Lo que más se pide esta temporada.</p>
+      </div>
+      <a class="ver-todo" href="/galeria">Ver todo</a>
+    </div>
+    <div class="rejilla">
+      {% for p in destacados %}{{ tarjeta(p) }}{% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="seccion" style="background:var(--crema-2);border-block:1px solid var(--linea)">
+  <div class="contenedor">
+    <div class="seccion-cabeza">
+      <div>
+        <h2>Explora por sección</h2>
+        <p>Cuatro familias, un mismo estándar.</p>
+      </div>
+    </div>
+    <div class="rejilla">
+      {% for clave, nombre in categorias.items() %}
+      <a class="panel" href="/galeria?categoria={{ clave }}">
+        <h3 style="margin-bottom:.2rem">{{ nombre }}</h3>
+        <p class="mudo mb-0">{{ conteo.get(clave, 0) }} producto(s) disponible(s)</p>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% if recientes %}
+<section class="seccion">
+  <div class="contenedor">
+    <div class="seccion-cabeza">
+      <div>
+        <h2>Recién agregados</h2>
+        <p>Lo nuevo del taller.</p>
+      </div>
+    </div>
+    <div class="rejilla">
+      {% for p in recientes %}{{ tarjeta(p) }}{% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

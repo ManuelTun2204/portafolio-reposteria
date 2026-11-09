@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block titulo %}Pedido {{ pedido.folio }} · {{ marca }}{% endblock %}
+
+{% block contenido %}
+<section class="pagina">
+  <div class="contenedor">
+    <div class="pagina-cabeza">
+      <span class="eyebrow">Pedido recibido</span>
+      <h1>¡Gracias, {{ pedido.cliente }}!</h1>
+      <p>
+        Guardamos tu pedido con el folio <strong>{{ pedido.folio }}</strong>.
+        Te contactamos para confirmar la entrega y el pago.
+      </p>
+    </div>
+
+    <div class="dos-columnas">
+      <div class="panel">
+        <h3>Detalle</h3>
+        {% for it in items %}
+        <div class="fila-total">
+          <span>{{ it.cantidad }} × {{ it.nombre }} <span class="mudo">({{ it.presentacion }})</span></span>
+          <span>{{ it.subtotal|dinero }}</span>
+        </div>
+        {% endfor %}
+        <div class="fila-total mt-2"><span>Subtotal</span><span>{{ pedido.subtotal|dinero }}</span></div>
+        <div class="fila-total">
+          <span>Envío</span>
+          <span>
+            {% if pedido.entrega_tipo == 'domicilio' %}
+              {% if pedido.envio_convenir %}Por confirmar{% else %}{{ pedido.envio|dinero }}{% endif %}
+            {% else %}
+              Sin costo
+            {% endif %}
+          </span>
+        </div>
+        <div class="fila-total grande"><span>Total</span><span>{{ pedido.total|dinero }}</span></div>
+        {% if pedido.envio_convenir %}
+        <p class="mudo mt-1 mb-0">
+          El total no incluye el envío: lo confirmamos por WhatsApp según tu zona.
+        </p>
+        {% endif %}
+
+        <h3 class="mt-3">Entrega</h3>
+        <p class="mb-0"><strong>{{ pedido.entrega or 'A convenir' }}</strong></p>
+        {% if pedido.direccion %}<p class="mudo mt-1 mb-0">{{ pedido.direccion }}</p>{% endif %}
+        {% if pedido.notas %}<p class="mudo mt-1 mb-0">Notas: {{ pedido.notas }}</p>{% endif %}
+      </div>
+
+      <aside class="panel">
+        <h3>Pago</h3>
+        {% set por_pagar = pedido.anticipo if pedido.anticipo > 0 else pedido.total %}
+        {% if config.clabe %}
+          <p class="mb-0">Transfiere o deposita y mándanos el comprobante por WhatsApp.</p>
+          <dl class="pago-datos">
+            {% if config.banco %}<dt>Banco</dt><dd>{{ config.banco }}</dd>{% endif %}
+            {% if config.titular %}<dt>Titular</dt><dd>{{ config.titular }}</dd>{% endif %}
+            <dt>CLABE</dt>
+            <dd class="clabe">
+              <span>{{ config.clabe }}</span>
+              <button type="button" class="btn btn-borde btn-mini" data-copiar="{{ config.clabe }}">Copiar</button>
+            </dd>
+            <dt>Concepto</dt><dd>{{ pedido.folio }}</dd>
+            <dt>{{ 'Anticipo para apartar' if pedido.anticipo > 0 else 'Monto' }}</dt>
+            <dd class="monto">{{ por_pagar|dinero }}</dd>
+          </dl>
+          {% if pedido.anticipo > 0 %}
+          <p class="mudo mb-0">
+            Apartas con el anticipo; el resto se paga al {{ 'entregar' if pedido.entrega_tipo == 'domicilio' else 'recoger' }} el pedido.
+          </p>
+          {% endif %}
+        {% else %}
+          <p class="mb-0">
+            No se cobra nada en línea. Acordamos la forma de pago por WhatsApp al confirmar el pedido.
+          </p>
+        {% endif %}
+
+        {% if whatsapp %}
+        <a class="btn btn-primario btn-bloque mt-2"
+           href="https://wa.me/{{ whatsapp }}?text=Hola,%20mi%20pedido%20es%20{{ pedido.folio }}"
+           target="_blank" rel="noopener">Escribir por WhatsApp</a>
+        {% endif %}
+        <a class="btn btn-borde btn-bloque mt-1" href="/galeria">Seguir comprando</a>
+        <p class="mudo mt-2 mb-0">Estado actual: <strong>{{ pedido.estado }}</strong></p>
+      </aside>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Copiar la CLABE es la accion mas repetida al pagar por transferencia desde
+  // el celular. Si el navegador no da permiso, el numero sigue visible.
+  (function () {
+    var botones = document.querySelectorAll('[data-copiar]');
+    for (var i = 0; i < botones.length; i++) {
+      botones[i].addEventListener('click', function () {
+        var texto = this.getAttribute('data-copiar');
+        var boton = this;
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(texto).then(function () {
+            var original = boton.textContent;
+            boton.textContent = 'Copiado';
+            setTimeout(function () { boton.textContent = original; }, 1500);
+          });
+        }
+      });
+    }
+  })();
+</script>
+{% endblock %}

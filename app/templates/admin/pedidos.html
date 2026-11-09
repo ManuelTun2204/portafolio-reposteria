@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block titulo %}Pedidos · {{ marca }}{% endblock %}
+
+{% block contenido %}
+<section class="pagina">
+  <div class="contenedor">
+    <div class="pagina-cabeza">
+      <span class="eyebrow">Administración</span>
+      <h1>Pedidos</h1>
+      <p>Pedidos apartados desde la tienda. Cambia el estado conforme avance la preparación.</p>
+    </div>
+
+    {% include "admin/_nav.html" %}
+
+    <div class="panel">
+      {% if pedidos %}
+      <table class="tabla">
+        <thead>
+          <tr><th>Folio</th><th>Fecha</th><th>Cliente</th><th>Artículos</th><th class="num">Total</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          {% for p in pedidos %}
+          <tr>
+            <td>
+              <strong>{{ p.folio }}</strong><br>
+              <span class="mudo">{{ p.telefono or p.email or '' }}</span>
+            </td>
+            <td class="mudo">{{ p.creado }}</td>
+            <td>
+              {{ p.cliente }}<br>
+              <span class="mudo">{{ p.entrega or '' }}</span>
+              {% if p.direccion %}<br><span class="mudo">{{ p.direccion }}</span>{% endif %}
+            </td>
+            <td>
+              <details>
+                <summary>{{ detalle[p.id]|length }} artículo(s)</summary>
+                <ul style="margin:.4rem 0 0;padding-left:1.1rem">
+                  {% for it in detalle[p.id] %}
+                  <li>{{ it.cantidad }} × {{ it.nombre }} — {{ it.subtotal|dinero }}</li>
+                  {% endfor %}
+                </ul>
+              </details>
+            </td>
+            <td class="num">
+              {{ p.total|dinero }}<br>
+              <span class="mudo">
+                {% if p.entrega_tipo == 'domicilio' %}
+                  envío {% if p.envio_convenir %}por confirmar{% else %}{{ p.envio|dinero }}{% endif %}
+                {% else %}
+                  sin envío
+                {% endif %}
+              </span>
+              {% if p.anticipo > 0 %}<br><span class="mudo">anticipo {{ p.anticipo|dinero }}</span>{% endif %}
+            </td>
+            <td>
+              <form method="post" action="/admin/pedidos/{{ p.id }}/estado" style="display:flex;gap:.35rem;align-items:center">
+                <select name="estado" style="padding:.35rem;border:1px solid var(--linea);border-radius:8px;font-family:inherit">
+                  {% for e in estados %}
+                  <option value="{{ e }}" {{ 'selected' if p.estado == e else '' }}>{{ e }}</option>
+                  {% endfor %}
+                </select>
+                <button class="btn btn-borde btn-mini">Guardar</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="vacio">
+        <h2>Sin pedidos todavía</h2>
+        <p>Cuando alguien aparte desde la tienda, aparecerá aquí.</p>
+        <a class="btn btn-primario" href="/galeria">Ver la tienda</a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

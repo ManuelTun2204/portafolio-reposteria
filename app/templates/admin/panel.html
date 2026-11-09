@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block titulo %}Panel · {{ marca }}{% endblock %}
+
+{% block contenido %}
+<section class="pagina">
+  <div class="contenedor">
+    <div class="pagina-cabeza">
+      <span class="eyebrow">Administración</span>
+      <h1>Panel</h1>
+      <p>Lo que el cliente no ve: productos, recetas, stock y pedidos.</p>
+    </div>
+
+    {% include "admin/_nav.html" %}
+
+    {% if password_default or secret_default %}
+    <div class="aviso aviso-error">
+      <strong>Configuración de ejemplo.</strong>
+      {% if password_default %}La contraseña del panel sigue siendo <code>admin123</code>.{% endif %}
+      {% if secret_default %}La clave de sesión es la de ejemplo.{% endif %}
+      Cambia <code>ADMIN_PASSWORD</code> y <code>SECRET_KEY</code> en el archivo <code>.env</code> antes de publicar el sitio.
+    </div>
+    {% endif %}
+
+    <div class="tablero">
+      <div class="dato"><strong>{{ total_productos }}</strong><span>Productos</span></div>
+      <div class="dato"><strong>{{ activos }}</strong><span>Activos en tienda</span></div>
+      <div class="dato {{ 'alerta' if sin_stock else '' }}"><strong>{{ sin_stock }}</strong><span>Sin stock</span></div>
+      <div class="dato {{ 'alerta' if pedidos_nuevos else '' }}"><strong>{{ pedidos_nuevos }}</strong><span>Pedidos nuevos</span></div>
+      <div class="dato"><strong>{{ recetas }}</strong><span>Recetas guardadas</span></div>
+    </div>
+
+    <div class="barra-acciones">
+      <a class="btn btn-primario" href="/admin/productos/nuevo">+ Nuevo producto</a>
+      <a class="btn btn-borde" href="/admin/pedidos">Ver pedidos</a>
+    </div>
+
+    <div class="panel">
+      <h3>Últimos pedidos</h3>
+      {% if ultimos %}
+      <table class="tabla">
+        <thead>
+          <tr><th>Folio</th><th>Fecha</th><th>Cliente</th><th class="num">Total</th><th>Estado</th></tr>
+        </thead>
+        <tbody>
+          {% for p in ultimos %}
+          <tr>
+            <td><strong>{{ p.folio }}</strong></td>
+            <td class="mudo">{{ p.creado }}</td>
+            <td>{{ p.cliente }}</td>
+            <td class="num">{{ p.total|dinero }}</td>
+            <td><span class="pastilla">{{ p.estado }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="mudo mb-0">Aún no hay pedidos.</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

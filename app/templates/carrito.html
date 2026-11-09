@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block titulo %}Carrito · {{ marca }}{% endblock %}
+
+{% block contenido %}
+<section class="pagina">
+  <div class="contenedor">
+    <div class="pagina-cabeza">
+      <span class="eyebrow">Tu compra</span>
+      <h1>Carrito</h1>
+      <p>Revisa cantidades. El total se calcula con el precio vigente y el stock real.</p>
+    </div>
+
+    {% if filas %}
+    <div class="dos-columnas">
+      <div class="panel">
+        {% for f in filas %}
+        <div class="linea-carrito">
+          <div class="linea-foto">
+            {% if f.producto.foto %}
+            <img src="/static/uploads/{{ f.producto.foto }}" alt="{{ f.producto.nombre }}">
+            {% else %}
+            <div class="foto-vacia" style="font-size:1.6rem" aria-hidden="true">✦</div>
+            {% endif %}
+          </div>
+          <div>
+            <div class="linea-nombre"><a href="/producto/{{ f.producto.slug }}">{{ f.producto.nombre }}</a></div>
+            <div class="linea-meta">{{ f.producto.presentacion }} · {{ f.producto.precio|dinero }} c/u</div>
+            <form method="post" action="/carrito/actualizar" style="display:flex;gap:.5rem;align-items:center;margin-top:.5rem">
+              <input type="hidden" name="producto_id" value="{{ f.producto.id }}">
+              <div class="cantidad">
+                <input type="number" name="cantidad" value="{{ f.cantidad }}" min="1" max="{{ f.producto.stock }}" aria-label="Cantidad de {{ f.producto.nombre }}">
+              </div>
+              <button class="btn btn-borde btn-mini">Actualizar</button>
+            </form>
+          </div>
+          <div class="num" style="text-align:right">
+            <div class="precio">{{ f.subtotal|dinero }}</div>
+            <form method="post" action="/carrito/quitar" style="margin-top:.4rem">
+              <input type="hidden" name="producto_id" value="{{ f.producto.id }}">
+              <button class="btn btn-peligro btn-mini">Quitar</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <aside class="panel">
+        <h3>Resumen</h3>
+        <div class="fila-total"><span>Artículos</span><span>{{ carrito_n }}</span></div>
+        <div class="fila-total"><span>Envío</span><span>Se acuerda al confirmar</span></div>
+        <div class="fila-total grande"><span>Total</span><span>{{ total|dinero }}</span></div>
+        <a class="btn btn-primario btn-bloque mt-2" href="/checkout">Continuar con el pedido</a>
+        <a class="btn btn-borde btn-bloque mt-1" href="/galeria">Seguir comprando</a>
+        <p class="mudo mt-2 mb-0">No se cobra en línea. Al apartar, guardamos tu pedido con un folio.</p>
+      </aside>
+    </div>
+    {% else %}
+    <div class="panel vacio">
+      <h2>Tu carrito está vacío</h2>
+      <p>Elige algo rico en la galería y vuelve aquí.</p>
+      <a class="btn btn-primario" href="/galeria">Ir a la galería</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

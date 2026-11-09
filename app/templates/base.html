@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}{{ marca }} · Repostería artesanal{% endblock %}</title>
+  <meta name="description" content="{% block descripcion %}Repostería artesanal por encargo: pasteles, postres, promociones y novedades.{% endblock %}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧁</text></svg>">
+  <link rel="stylesheet" href="/static/css/tienda.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="contenedor topbar-in">
+    <a class="marca" href="/">
+      <span class="marca-icono">✦</span>
+      <span class="marca-texto">
+        <strong>{{ marca }}</strong>
+        <small>Repostería artesanal</small>
+      </span>
+    </a>
+
+    <nav class="nav" aria-label="Principal">
+      <a href="/">Inicio</a>
+      <a href="/galeria">Galería</a>
+      {% for clave, nombre in categorias.items() %}
+      <a href="/galeria?categoria={{ clave }}">{{ nombre }}</a>
+      {% endfor %}
+      {% if es_admin %}
+      <a class="nav-admin" href="/admin/productos">Productos</a>
+      <a class="nav-admin" href="/admin/recetas">Recetas</a>
+      <a class="nav-admin" href="/admin/pedidos">Pedidos</a>
+      {% endif %}
+    </nav>
+
+    <div class="acciones">
+      {% if es_admin %}
+      <a class="btn btn-oscuro btn-mini" href="/admin">Panel</a>
+      {% endif %}
+      <a class="carrito" href="/carrito" aria-label="Ver carrito">
+        Carrito <span class="carrito-n">{{ carrito_n }}</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<main>
+  {% block contenido %}{% endblock %}
+</main>
+
+<footer class="pie">
+  <div class="contenedor">
+    <div>
+      <h4>{{ marca }}</h4>
+      <p>Repostería artesanal por encargo. Cada pieza se hornea para su entrega.</p>
+    </div>
+    <div>
+      <h4>Tienda</h4>
+      <ul>
+        <li><a href="/galeria">Galería completa</a></li>
+        {% for clave, nombre in categorias.items() %}
+        <li><a href="/galeria?categoria={{ clave }}">{{ nombre }}</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div>
+      <h4>Pedidos</h4>
+      <ul>
+        <li><a href="/carrito">Ver carrito</a></li>
+        <li><a href="/checkout">Terminar compra</a></li>
+        {% if direccion_taller %}<li>Recoger en: {{ direccion_taller }}</li>{% endif %}
+        {% if whatsapp %}<li>WhatsApp: {{ whatsapp }}</li>{% endif %}
+        {% if es_admin %}<li><a href="/admin">Panel de administración</a></li>{% endif %}
+      </ul>
+    </div>
+  </div>
+  <div class="pie-abajo">© {{ anio }} {{ marca }} · Sitio de demostración</div>
+</footer>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

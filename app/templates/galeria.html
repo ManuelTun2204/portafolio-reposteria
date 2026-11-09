@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_card.html" import tarjeta %}
+
+{% block titulo %}Galería · {{ marca }}{% endblock %}
+
+{% block contenido %}
+<section class="pagina">
+  <div class="contenedor">
+    <div class="pagina-cabeza">
+      <span class="eyebrow">Galería</span>
+      <h1>{{ categorias[categoria] if categoria else 'Todo el catálogo' }}</h1>
+      <p>Haz clic en una foto para ver presentación, precio, stock y tiempo de entrega.</p>
+    </div>
+
+    <div class="chips">
+      <a class="chip {{ 'activo' if not categoria else '' }}" href="/galeria">Todo</a>
+      {% for clave, nombre in categorias.items() %}
+      <a class="chip {{ 'activo' if categoria == clave else '' }}" href="/galeria?categoria={{ clave }}">{{ nombre }}</a>
+      {% endfor %}
+    </div>
+
+    {% if productos %}
+    <div class="rejilla">
+      {% for p in productos %}{{ tarjeta(p) }}{% endfor %}
+    </div>
+    {% else %}
+    <div class="panel vacio">
+      <h2>Sin productos en esta sección</h2>
+      <p>Prueba con otra categoría o vuelve al catálogo completo.</p>
+      <a class="btn btn-primario" href="/galeria">Ver todo</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

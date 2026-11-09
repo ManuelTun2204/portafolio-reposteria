@@ -1,0 +1,22 @@
+services:
+  portafolio:
+    build: .
+    container_name: portafolio_reposteria
+    restart: "no"
+    ports:
+      - "8515:8515"
+    environment:
+      MARCA: ${MARCA:-Dulce Atelier}
+      WHATSAPP: ${WHATSAPP:-}
+      DIRECCION_TALLER: ${DIRECCION_TALLER:-}
+      BANCO: ${BANCO:-}
+      TITULAR: ${TITULAR:-}
+      CLABE: ${CLABE:-}
+      ANTICIPO_PORCENTAJE: ${ANTICIPO_PORCENTAJE:-0}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
+      SECRET_KEY: ${SECRET_KEY:-cambiar-esta-clave-en-produccion}
+      DATA_DIR: /app/data
+      DB_PATH: /app/data/portafolio.db
+    volumes:
+      - ./data:/app/data
+      - ./app/static/uploads:/app/app/static/uploads
