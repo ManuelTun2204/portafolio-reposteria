@@ -56,7 +56,11 @@ p { margin: 0 0 1em; color: var(--cacao-suave); }
 
 .contenedor { width: min(1180px, 100% - 3rem); margin-inline: auto; }
 
-/* ---------- barra superior ---------- */
+.topbar .marca { display: flex; align-items: center; gap: .6rem; }
+.topbar .marca-logo { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; box-shadow: 0 2px 8px rgba(59,42,32,.18); }
+.topbar .marca-texto { display: flex; flex-direction: column; line-height: 1.1; }
+.topbar .marca-texto strong { font-family: var(--serif); font-size: 1.05rem; }
+.topbar .marca-texto small { font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--cacao-suave); }
 .topbar {
   position: sticky;
   top: 0;

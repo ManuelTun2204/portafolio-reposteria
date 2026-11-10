@@ -95,7 +95,8 @@ def _ctx(request: Request, **extra) -> dict:
     carrito = request.session.get("carrito", {})
     return {
         "request": request,
-        "marca": os.getenv("MARCA", "Dulce Atelier"),
+        "marca": os.getenv("MARCA", "DULCE CANELA"),
+        "logo": os.getenv("LOGO", "/static/img/logo.jpg").strip() or "/static/img/logo.jpg",
         "whatsapp": os.getenv("WHATSAPP", ""),
         "anio": datetime.now().year,
         "categorias": db.CATEGORIAS,

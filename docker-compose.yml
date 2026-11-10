@@ -6,7 +6,8 @@ services:
     ports:
       - "8515:8515"
     environment:
-      MARCA: ${MARCA:-Dulce Atelier}
+      MARCA: ${MARCA:-DULCE CANELA}
+      LOGO: ${LOGO:-/static/img/logo.jpg}
       WHATSAPP: ${WHATSAPP:-}
       DIRECCION_TALLER: ${DIRECCION_TALLER:-}
       BANCO: ${BANCO:-}
